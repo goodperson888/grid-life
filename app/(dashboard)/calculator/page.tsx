@@ -23,28 +23,40 @@ export default function CalculatorPage() {
     fetch("/api/user/profile").then((r) => r.json()).then((j) => setProfile(j.data));
   }, []);
 
-  async function handleAdd(data: Omit<CalculatorEventData, "id">) {
+  async function handleAdd(data: {
+    name: string;
+    frequencyPerYear: number;
+    activeUntilAge: number;
+    qualityDecayAge?: number | null;
+  }) {
+    const payload = { ...data, qualityDecayAge: data.qualityDecayAge ?? null };
     const res = await fetch("/api/calculator", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     const json = await res.json();
     setEvents((prev) => [...prev, json.data]);
     setShowForm(false);
   }
 
-  async function handleEdit(data: Omit<CalculatorEventData, "id">) {
+  async function handleEdit(data: {
+    name: string;
+    frequencyPerYear: number;
+    activeUntilAge: number;
+    qualityDecayAge?: number | null;
+  }) {
     if (!editingEvent) return;
+    const payload = { ...data, qualityDecayAge: data.qualityDecayAge ?? null };
     const res = await fetch(`/api/calculator/${editingEvent.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     await res.json();
     // 更新本地状态
     setEvents((prev) =>
-      prev.map((e) => (e.id === editingEvent.id ? { ...e, ...data } : e))
+      prev.map((e) => (e.id === editingEvent.id ? { ...e, ...payload } : e))
     );
     setEditingEvent(null);
   }

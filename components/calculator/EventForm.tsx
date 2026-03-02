@@ -9,7 +9,7 @@ interface EventFormProps {
     name: string;
     frequencyPerYear: number;
     activeUntilAge: number;
-    qualityDecayAge?: number;
+    qualityDecayAge?: number | null;
   }) => Promise<void>;
   onCancel: () => void;
 }

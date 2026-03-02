@@ -7,8 +7,9 @@ import { eq, and } from "drizzle-orm";
 // PUT /api/calculator/[id] — 编辑事件
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "未登录" }, { status: 401 });
 
@@ -18,7 +19,7 @@ export async function PUT(
     .update(calculatorEvents)
     .set(body)
     .where(
-      and(eq(calculatorEvents.id, params.id), eq(calculatorEvents.userId, session.user.id))
+      and(eq(calculatorEvents.id, id), eq(calculatorEvents.userId, session.user.id))
     );
 
   return NextResponse.json({ data: { success: true } });
@@ -27,15 +28,16 @@ export async function PUT(
 // DELETE /api/calculator/[id] — 删除事件
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "未登录" }, { status: 401 });
 
   await db
     .delete(calculatorEvents)
     .where(
-      and(eq(calculatorEvents.id, params.id), eq(calculatorEvents.userId, session.user.id))
+      and(eq(calculatorEvents.id, id), eq(calculatorEvents.userId, session.user.id))
     );
 
   return NextResponse.json({ data: { success: true } });
