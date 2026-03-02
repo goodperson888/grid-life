@@ -129,16 +129,30 @@ export default function LifeGrid({ birthDate, expectedLifespan = 90 }: LifeGridP
     setTooltip(null);
   }
 
+  function generatePoster() {
+    const url = `/api/og/grid?weeksLived=${stats.weeksLived}&weeksTotal=${stats.totalWeeks}&percentage=${stats.percentageLived}&age=${stats.currentAge}`;
+    // 直接在新标签页打开，用户可以右键保存
+    window.open(url, "_blank");
+  }
+
   const COLS = 52;
   const rows = Math.ceil(cells.length / COLS);
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-6 text-sm text-stone-500">
-        <span>已过 <strong className="text-stone-800">{stats.weeksLived}</strong> 周</span>
-        <span>剩余 <strong className="text-stone-800">{stats.weeksRemaining}</strong> 周</span>
-        <span>已用 <strong className="text-rose-400">{stats.percentageLived}%</strong></span>
-        <span>当前 <strong className="text-stone-800">{stats.currentAge}</strong> 岁</span>
+      <div className="flex items-center justify-between">
+        <div className="flex gap-6 text-sm text-stone-500">
+          <span>已过 <strong className="text-stone-800">{stats.weeksLived}</strong> 周</span>
+          <span>剩余 <strong className="text-stone-800">{stats.weeksRemaining}</strong> 周</span>
+          <span>已用 <strong className="text-rose-400">{stats.percentageLived}%</strong></span>
+          <span>当前 <strong className="text-stone-800">{stats.currentAge}</strong> 岁</span>
+        </div>
+        <button
+          onClick={generatePoster}
+          className="rounded-lg bg-rose-400 px-4 py-2 text-sm text-white hover:bg-rose-500 transition-colors"
+        >
+          生成海报
+        </button>
       </div>
 
       {loading && <p className="text-sm text-stone-400">加载日记数据中...</p>}
