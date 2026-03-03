@@ -3,22 +3,33 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Turnstile from "@/components/auth/Turnstile";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
+    // 如果配置了 Turnstile 但没有 token，提示用户
+    if (siteKey && siteKey !== "your_turnstile_site_key" && !turnstileToken) {
+      setError("请完成人机验证");
+      setLoading(false);
+      return;
+    }
+
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, turnstileToken }),
     });
 
     const json = await res.json();
@@ -76,6 +87,13 @@ export default function RegisterPage() {
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
+
+          {/* Turnstile 验证码 */}
+          <Turnstile
+            siteKey={siteKey}
+            onVerify={(token) => setTurnstileToken(token)}
+            onError={() => setError("人机验证失败，请刷新页面重试")}
+          />
 
           <button
             type="submit"
