@@ -30,6 +30,7 @@ declare global {
 export default function Turnstile({ siteKey, onVerify, onError }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const scriptLoadedRef = useRef(false);
 
   useEffect(() => {
     // 如果没有配置 siteKey，不渲染
@@ -37,36 +38,63 @@ export default function Turnstile({ siteKey, onVerify, onError }: TurnstileProps
       return;
     }
 
-    // 加载 Turnstile 脚本
-    const script = document.createElement("script");
-    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-    script.async = true;
-    script.defer = true;
+    // 防止重复加载
+    if (scriptLoadedRef.current) {
+      return;
+    }
 
-    script.onload = () => {
-      if (containerRef.current && window.turnstile) {
-        widgetIdRef.current = window.turnstile.render(containerRef.current, {
-          sitekey: siteKey,
-          callback: onVerify,
-          "error-callback": onError,
-          theme: "light",
-          size: "normal",
-        });
+    // 检查脚本是否已经存在
+    const existingScript = document.querySelector(
+      'script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]'
+    );
+
+    const renderWidget = () => {
+      if (containerRef.current && window.turnstile && !widgetIdRef.current) {
+        try {
+          widgetIdRef.current = window.turnstile.render(containerRef.current, {
+            sitekey: siteKey,
+            callback: onVerify,
+            "error-callback": onError,
+            theme: "light",
+            size: "normal",
+          });
+        } catch (error) {
+          console.error("Turnstile render error:", error);
+        }
       }
     };
 
-    document.head.appendChild(script);
+    if (existingScript) {
+      // 脚本已存在，直接渲染
+      if (window.turnstile) {
+        renderWidget();
+      } else {
+        existingScript.addEventListener("load", renderWidget);
+      }
+      scriptLoadedRef.current = true;
+    } else {
+      // 加载新脚本
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      script.onload = renderWidget;
+      document.head.appendChild(script);
+      scriptLoadedRef.current = true;
+    }
 
     return () => {
-      // 清理
+      // 清理 widget，但不删除脚本（避免其他实例出问题）
       if (widgetIdRef.current && window.turnstile) {
-        window.turnstile.remove(widgetIdRef.current);
-      }
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+          widgetIdRef.current = null;
+        } catch (error) {
+          console.error("Turnstile cleanup error:", error);
+        }
       }
     };
-  }, [siteKey, onVerify, onError]);
+  }, [siteKey]);
 
   // 如果没有配置 siteKey，显示提示
   if (!siteKey || siteKey === "your_turnstile_site_key") {
